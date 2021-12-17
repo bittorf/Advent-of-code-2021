@@ -1,6 +1,6 @@
 #!/bin/sh
 
-FILE='input2.txt'
+FILE='input.txt'
 
 array_put()
 {
@@ -8,7 +8,6 @@ array_put()
 	local y="$2"
 	local char="$3"
 
-	echo "put: $x,$y = $char"
 	eval ARRAY_${x}_${y}='$char'
 }
 
@@ -41,21 +40,23 @@ while read -r LINE; do {
 	test $Y1 -gt $YMAX && YMAX=$Y1
 	test $Y2 -gt $YMAX && YMAX=$Y2
 
-#	echo "X1:$X1 Y1:$Y1 X2:$X2 Y2:$Y2 | X/YMAX: $XMAX/$YMAX"
+	# only horizontal or vertical lines:
+	OK=false
+	test $X1 -eq $X2 && OK=true
+	test $Y1 -eq $Y2 && OK=true
+	test $OK = false && continue
 
 	X=$X1
 	Y=$Y1
 	while true; do {
-		test $X -eq $X2 && test $Y -eq $Y2 && break
-
-		echo "X:$X Y:$Y => X2:$X2 Y2:$Y2"
-
 		array_get $X $Y
 		if isnumber "$FIELD"; then
 			array_put $X $Y $(( FIELD + 1 ))
 		else
 			array_put $X $Y 1
 		fi
+
+		test $X -eq $X2 && test $Y -eq $Y2 && break
 
 		if   test $X -lt $X2; then
 			X=$(( X + 1 ))
@@ -69,22 +70,26 @@ while read -r LINE; do {
 			Y=$(( Y - 1 ))
 		fi
 	} done
-
-	break
 } done <"$FILE"
 
-XMAX=9
-YMAX=9
-
+OVERLAP=0
 Y=0
-while [ $Y -lt $YMAX ]; do {
+while [ $Y -le $YMAX ]; do {
 	X=0
-	while [ $X -lt $XMAX ]; do {
+	while [ $X -le $XMAX ]; do {
 		array_get $X $Y
 		printf '%s' "$FIELD"
+
+		case "$FIELD" in
+			'.'|'1') ;;
+			*) OVERLAP=$(( OVERLAP + 1 )) ;;
+		esac
+
 		X=$(( X + 1 ))
 	} done
 
 	echo '|'
 	Y=$(( Y + 1 ))
 } done
+
+echo "X/Y-MAX: $XMAX/$YMAX - overlap: $OVERLAP"
